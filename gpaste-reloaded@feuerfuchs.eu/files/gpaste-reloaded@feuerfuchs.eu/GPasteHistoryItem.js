@@ -17,6 +17,7 @@ GPasteHistoryItem.prototype = {
         PopupMenu.PopupBaseMenuItem.prototype._init.call(this);
 
         this._applet = applet;
+        this._pinned = false;
 
         //
         // Label
@@ -27,6 +28,23 @@ GPasteHistoryItem.prototype = {
 
         this.setTextLength();
         this._settingsChangedID = this._applet.clientSettings.connect('changed::element-size', Lang.bind(this, this.setTextLength));
+
+        //
+        // Pin button (star icon)
+
+        this._iconPinned = new St.Icon({
+            icon_name:   'starred-symbolic',
+            icon_type:   St.IconType.SYMBOLIC,
+            style_class: 'popup-menu-icon'
+        });
+        this._iconUnpinned = new St.Icon({
+            icon_name:   'non-starred-symbolic',
+            icon_type:   St.IconType.SYMBOLIC,
+            style_class: 'popup-menu-icon'
+        });
+        this.pinButton = new St.Button({ child: this._iconUnpinned });
+        this.pinButton.connect('clicked', Lang.bind(this, this.togglePin));
+        this.addActor(this.pinButton, { expand: false, span: -1, align: St.Align.END });
 
         //
         // Delete button
@@ -81,6 +99,8 @@ GPasteHistoryItem.prototype = {
                 let item = client.get_element_at_index_finish(result);
                 this._uuid = item.get_uuid();
                 this.label.set_text(item.get_value().replace(/[\t\n\r]/g, ''));
+                // Query pinned state for this item
+                this._queryPinnedState();
             }));
 
             this.actor.show();
@@ -98,8 +118,68 @@ GPasteHistoryItem.prototype = {
                 let item = client.get_element_at_index_finish(result);
                 this._uuid = item.get_uuid();
                 this.label.set_text(item.get_value().replace(/[\t\n\r]/g, ''));
+                // Query pinned state for this item
+                this._queryPinnedState();
             }));
         },
+
+    /*
+     * Query the pinned state from GPaste daemon via D-Bus
+     */
+    _queryPinnedState: function() {
+        if (!this._uuid) return;
+        
+        try {
+            this._applet.client.is_pinned(this._uuid, Lang.bind(this, function(client, result) {
+                try {
+                    this._pinned = client.is_pinned_finish(result);
+                    this._updatePinIcon();
+                } catch (e) {
+                    // IsPinned method may not be available in older GPaste versions
+                    this._pinned = false;
+                    this._updatePinIcon();
+                }
+            }));
+        } catch (e) {
+            // Fallback if is_pinned method doesn't exist
+            this._pinned = false;
+            this._updatePinIcon();
+        }
+    },
+
+    /*
+     * Update the pin button icon based on pinned state
+     */
+    _updatePinIcon: function() {
+        if (this._pinned) {
+            this.pinButton.set_child(this._iconPinned);
+        } else {
+            this.pinButton.set_child(this._iconUnpinned);
+        }
+    },
+
+    /*
+     * Toggle the pinned state of this item
+     */
+    togglePin: function() {
+        if (!this._uuid) return;
+
+        const newPinnedState = !this._pinned;
+        
+        try {
+            this._applet.client.set_pinned(this._uuid, newPinnedState, Lang.bind(this, function(client, result) {
+                try {
+                    client.set_pinned_finish(result);
+                    this._pinned = newPinnedState;
+                    this._updatePinIcon();
+                } catch (e) {
+                    global.logError("GPaste: Failed to set pinned state: " + e);
+                }
+            }));
+        } catch (e) {
+            global.logError("GPaste: set_pinned method not available: " + e);
+        }
+    },
     
     /*
      * Remove history item
