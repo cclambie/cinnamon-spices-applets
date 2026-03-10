@@ -30,23 +30,15 @@ GPasteHistoryItem.prototype = {
         this._settingsChangedID = this._applet.clientSettings.connect('changed::element-size', Lang.bind(this, this.setTextLength));
 
         //
-        // Pin button (star icon)
+        // Pin button (star)
 
-        this._iconPinned = new St.Icon({
-            icon_name:   'starred-symbolic',
-            icon_size:   16,
-            icon_type:   St.IconType.SYMBOLIC,
-            style_class: 'popup-menu-icon'
-        });
-        this._iconUnpinned = new St.Icon({
-            icon_name:   'non-starred-symbolic',
-            icon_size:   16,
-            icon_type:   St.IconType.SYMBOLIC,
+        this._pinLabel = new St.Label({
+            text: '☆',
             style_class: 'popup-menu-icon'
         });
         this.pinButton = new St.Button({ 
-            child: this._iconUnpinned,
-            style_class: 'gpaste-pin-button'
+            child: this._pinLabel,
+            style_class: 'popup-menu-item'
         });
         this.pinButton.connect('clicked', Lang.bind(this, this.togglePin));
         this.addActor(this.pinButton, { expand: false, span: -1, align: St.Align.END });
@@ -157,9 +149,9 @@ GPasteHistoryItem.prototype = {
      */
     _updatePinIcon: function() {
         if (this._pinned) {
-            this.pinButton.set_child(this._iconPinned);
+            this._pinLabel.set_text('★');
         } else {
-            this.pinButton.set_child(this._iconUnpinned);
+            this._pinLabel.set_text('☆');
         }
     },
 
