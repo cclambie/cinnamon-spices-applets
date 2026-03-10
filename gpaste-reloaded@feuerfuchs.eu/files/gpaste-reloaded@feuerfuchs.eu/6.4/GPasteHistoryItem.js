@@ -34,15 +34,20 @@ GPasteHistoryItem.prototype = {
 
         this._iconPinned = new St.Icon({
             icon_name:   'starred-symbolic',
+            icon_size:   16,
             icon_type:   St.IconType.SYMBOLIC,
             style_class: 'popup-menu-icon'
         });
         this._iconUnpinned = new St.Icon({
             icon_name:   'non-starred-symbolic',
+            icon_size:   16,
             icon_type:   St.IconType.SYMBOLIC,
             style_class: 'popup-menu-icon'
         });
-        this.pinButton = new St.Button({ child: this._iconUnpinned });
+        this.pinButton = new St.Button({ 
+            child: this._iconUnpinned,
+            style_class: 'gpaste-pin-button'
+        });
         this.pinButton.connect('clicked', Lang.bind(this, this.togglePin));
         this.addActor(this.pinButton, { expand: false, span: -1, align: St.Align.END });
 
