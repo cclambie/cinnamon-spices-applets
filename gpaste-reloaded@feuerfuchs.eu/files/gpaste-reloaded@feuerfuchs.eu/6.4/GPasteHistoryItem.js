@@ -36,11 +36,8 @@ GPasteHistoryItem.prototype = {
             text: '☆',
             style_class: 'popup-menu-icon'
         });
-        this.pinButton = new St.Button({ 
-            child: this._pinLabel,
-            style_class: 'popup-menu-item'
-        });
-        this.pinButton.connect('clicked', Lang.bind(this, this.togglePin));
+        this.pinButton = new St.Button({ child: this._pinLabel });
+        this.pinButton.connect('clicked', Lang.bind(this, this._onPinClicked));
         this.addActor(this.pinButton, { expand: false, span: -1, align: St.Align.END });
 
         //
@@ -141,21 +138,29 @@ GPasteHistoryItem.prototype = {
      * Query the pinned state from GPaste daemon via D-Bus
      */
     _queryPinnedState: function() {
-        if (!this._uuid) return;
+        if (!this._uuid) {
+            global.log("GPaste: _queryPinnedState called but no uuid");
+            return;
+        }
+        
+        global.log("GPaste: Querying pinned state for " + this._uuid);
         
         try {
             this._applet.client.is_pinned(this._uuid, Lang.bind(this, function(client, result) {
                 try {
                     this._pinned = client.is_pinned_finish(result);
+                    global.log("GPaste: Item " + this._uuid + " pinned state: " + this._pinned);
                     this._updatePinIcon();
                 } catch (e) {
                     // IsPinned method may not be available in older GPaste versions
+                    global.log("GPaste: is_pinned_finish failed: " + e);
                     this._pinned = false;
                     this._updatePinIcon();
                 }
             }));
         } catch (e) {
             // Fallback if is_pinned method doesn't exist
+            global.logError("GPaste: is_pinned method not available: " + e);
             this._pinned = false;
             this._updatePinIcon();
         }
@@ -173,12 +178,24 @@ GPasteHistoryItem.prototype = {
     },
 
     /*
+     * Handle pin button click
+     */
+    _onPinClicked: function() {
+        global.log("GPaste: Pin button clicked, uuid=" + this._uuid);
+        this.togglePin();
+    },
+
+    /*
      * Toggle the pinned state of this item
      */
     togglePin: function() {
-        if (!this._uuid) return;
+        if (!this._uuid) {
+            global.log("GPaste: togglePin called but no uuid");
+            return;
+        }
 
         const newPinnedState = !this._pinned;
+        global.log("GPaste: Setting pinned state to " + newPinnedState + " for " + this._uuid);
         
         try {
             this._applet.client.set_pinned(this._uuid, newPinnedState, Lang.bind(this, function(client, result) {
@@ -186,6 +203,7 @@ GPasteHistoryItem.prototype = {
                     client.set_pinned_finish(result);
                     this._pinned = newPinnedState;
                     this._updatePinIcon();
+                    global.log("GPaste: Successfully set pinned state to " + newPinnedState);
                 } catch (e) {
                     global.logError("GPaste: Failed to set pinned state: " + e);
                 }
