@@ -3,6 +3,13 @@ const St        = imports.gi.St;
 const PopupMenu = imports.ui.popupMenu;
 const Pango     = imports.gi.Pango;
 const Clutter   = imports.gi.Clutter;
+const Gio       = imports.gi.Gio;
+const GLib      = imports.gi.GLib;
+
+// D-Bus constants for GPaste daemon
+const GPASTE_DBUS_NAME = 'org.gnome.GPaste.Daemon';
+const GPASTE_DBUS_PATH = '/org/gnome/GPaste';
+const GPASTE_DBUS_INTERFACE = 'org.gnome.GPaste2';
 
 // ------------------------------------------------------------------------------------------------------
 
@@ -122,28 +129,35 @@ GPasteHistoryItem.prototype = {
      */
     _queryPinnedState: function() {
         if (!this._uuid) {
-            global.log("GPaste: _queryPinnedState called but no uuid");
             return;
         }
         
-        global.log("GPaste: Querying pinned state for " + this._uuid);
-        
         try {
-            this._applet.client.is_pinned(this._uuid, Lang.bind(this, function(client, result) {
-                try {
-                    this._pinned = client.is_pinned_finish(result);
-                    global.log("GPaste: Item " + this._uuid + " pinned state: " + this._pinned);
-                    this._updatePinIcon();
-                } catch (e) {
-                    // IsPinned method may not be available in older GPaste versions
-                    global.log("GPaste: is_pinned_finish failed: " + e);
-                    this._pinned = false;
-                    this._updatePinIcon();
-                }
-            }));
+            // Make direct D-Bus call to IsPinned method
+            Gio.DBus.session.call(
+                GPASTE_DBUS_NAME,
+                GPASTE_DBUS_PATH,
+                GPASTE_DBUS_INTERFACE,
+                'IsPinned',
+                new GLib.Variant('(s)', [this._uuid]),
+                GLib.VariantType.new('(b)'),
+                Gio.DBusCallFlags.NONE,
+                -1,
+                null,
+                Lang.bind(this, function(connection, result) {
+                    try {
+                        let reply = connection.call_finish(result);
+                        this._pinned = reply.deep_unpack()[0];
+                        this._updatePinIcon();
+                    } catch (e) {
+                        // IsPinned method may not be available in older GPaste versions
+                        this._pinned = false;
+                        this._updatePinIcon();
+                    }
+                })
+            );
         } catch (e) {
-            // Fallback if is_pinned method doesn't exist
-            global.logError("GPaste: is_pinned method not available: " + e);
+            // Fallback if D-Bus call fails
             this._pinned = false;
             this._updatePinIcon();
         }
@@ -173,26 +187,35 @@ GPasteHistoryItem.prototype = {
      */
     togglePin: function() {
         if (!this._uuid) {
-            global.log("GPaste: togglePin called but no uuid");
             return;
         }
 
         const newPinnedState = !this._pinned;
-        global.log("GPaste: Setting pinned state to " + newPinnedState + " for " + this._uuid);
         
         try {
-            this._applet.client.set_pinned(this._uuid, newPinnedState, Lang.bind(this, function(client, result) {
-                try {
-                    client.set_pinned_finish(result);
-                    this._pinned = newPinnedState;
-                    this._updatePinIcon();
-                    global.log("GPaste: Successfully set pinned state to " + newPinnedState);
-                } catch (e) {
-                    global.logError("GPaste: Failed to set pinned state: " + e);
-                }
-            }));
+            // Make direct D-Bus call to SetPinned method
+            Gio.DBus.session.call(
+                GPASTE_DBUS_NAME,
+                GPASTE_DBUS_PATH,
+                GPASTE_DBUS_INTERFACE,
+                'SetPinned',
+                new GLib.Variant('(sb)', [this._uuid, newPinnedState]),
+                null,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                null,
+                Lang.bind(this, function(connection, result) {
+                    try {
+                        connection.call_finish(result);
+                        this._pinned = newPinnedState;
+                        this._updatePinIcon();
+                    } catch (e) {
+                        global.logError("GPaste: Failed to set pinned state: " + e);
+                    }
+                })
+            );
         } catch (e) {
-            global.logError("GPaste: set_pinned method not available: " + e);
+            global.logError("GPaste: SetPinned D-Bus call failed: " + e);
         }
     },
     
