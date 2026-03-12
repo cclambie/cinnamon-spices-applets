@@ -1,4 +1,4 @@
-GPaste is a clipboard management tool and application. This applet allows you to access and manage your clipboard history through an icon in the panel.
+GPaste is a clipboard management tool. This applet lets you access your clipboard through an icon in the panel.
 
 This is a completely re-written GPaste applet based on the [gnome shell extension](https://github.com/Keruspe/GPaste/tree/master/src/gnome-shell). It offers the following features:
 * Search for entries
@@ -10,14 +10,15 @@ This is a completely re-written GPaste applet based on the [gnome shell extensio
 
 # Installation
 
-The easiest way to install any applet is in Cinnamon Settings -> Applets. Just click on the Download tab and search for "gpaste"
+For this applet to work, it is necessary that GPaste is installed!
 
-After installing this applet, you will need to install the Gpaste application and daemon using your software manager.
-
-* For Linux Mint or other Ubuntu-based distros, install the packages "gpaste-2" and "gir1.2-gpaste-2" or "gpaste" and "gir1.2-gpaste-1.0" on older versions.
-* For Arch-based distros, install the package "gpaste".
+* If you use an Arch-based distro, that means you have to install the package "gpaste".
+* If you use a Ubuntu-based distro, install the packages "gpaste", "gpaste-applet" and "gir1.2-gpaste-4.0".
 * Other distros: Check if there's a package for GPaste. If there isn't, check the GitHub page linked below.
 
-Finally, make sure that the GPaste daemon is running. To do this, you can either reboot your computer or restart cinnamon (right click on the panel and click "Troubleshoot" -> "Restart Cinnamon").
+Finally, make sure that the GPaste daemon is running. You can either use the GPaste UI or just reboot.
 
 GPaste Github page: https://github.com/Keruspe/GPaste
+
+To install the applet itself, execute the `install.sh` script. If the applet doesn't appear in the applet list, you should restart Cinnamon by pressing Alt+F2, typing 'r' (without ') and hitting enter.
+To remove the applet, just run `install.sh -r`.
