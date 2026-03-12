@@ -56,8 +56,9 @@ GPasteHistoryItem.prototype = {
         // Delete button
 
         const iconDelete = new St.Icon({
-            icon_name:   'edit-delete',
+            icon_name:   'edit-delete-symbolic',
             icon_type:   St.IconType.SYMBOLIC,
+            icon_size:   16,
             style_class: 'popup-menu-icon'
         });
         this.deleteButton = new St.Button({ child: iconDelete });
