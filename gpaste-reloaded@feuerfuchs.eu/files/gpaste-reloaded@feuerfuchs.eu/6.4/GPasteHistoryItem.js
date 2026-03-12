@@ -22,6 +22,7 @@ GPasteHistoryItem.prototype = {
 
     _init: function(applet) {
         PopupMenu.PopupBaseMenuItem.prototype._init.call(this);
+        global.log("GPaste: GPasteHistoryItem._init called");
 
         this._applet = applet;
         this._pinned = false;
@@ -38,15 +39,18 @@ GPasteHistoryItem.prototype = {
 
         //
         // Pin button (star icon)
+        // Using view-pin/view-unpin as fallback, with explicit icon_size
 
         this._pinIcon = new St.Icon({
-            icon_name:   'non-starred-symbolic',
+            icon_name:   'view-pin-symbolic',
             icon_type:   St.IconType.SYMBOLIC,
+            icon_size:   16,
             style_class: 'popup-menu-icon'
         });
         this.pinButton = new St.Button({ child: this._pinIcon });
         this.pinButton.connect('clicked', Lang.bind(this, this._onPinClicked));
         this.addActor(this.pinButton, { expand: false, span: -1, align: St.Align.END });
+        global.log("GPaste: Pin button created with icon: " + this._pinIcon.icon_name);
 
         //
         // Delete button
@@ -185,10 +189,13 @@ GPasteHistoryItem.prototype = {
      * Update the pin button icon based on pinned state
      */
     _updatePinIcon: function() {
+        global.log("GPaste: _updatePinIcon called, pinned=" + this._pinned);
         if (this._pinned) {
-            this._pinIcon.set_icon_name('starred-symbolic');
+            this._pinIcon.set_icon_name('view-pin-symbolic');
+            this._pinIcon.add_style_class_name('gpaste-pinned');
         } else {
-            this._pinIcon.set_icon_name('non-starred-symbolic');
+            this._pinIcon.set_icon_name('view-pin-symbolic');
+            this._pinIcon.remove_style_class_name('gpaste-pinned');
         }
     },
 
